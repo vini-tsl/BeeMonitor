@@ -2,15 +2,24 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 import os
 
+basedir = os.path.abspath(os.path.dirname(__file__))
+
+if os.environ.get("VERCEL"):
+    database_path = "/tmp/beemonitor.db"
+else:
+    database_path = os.path.join(
+        basedir, "instance", "beemonitor.db"
+    )
+    os.makedirs(os.path.dirname(database_path), exist_ok=True)
+
+app.config["SQLALCHEMY_DATABASE_URI"] = (
+    f"sqlite:///{database_path}"
+)
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
 # ================= CONFIGURAÇÃO DO APP =================
 app = Flask(__name__)
 app.secret_key = '3j219i3n1bnu1wdh1u2dnh821kj'
-
-# Configuração do Banco de Dados
-basedir = os.path.abspath(os.path.dirname(__file__))
-app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(basedir, "instance", "beemonitor.db")}'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
 
 
 from models import db
