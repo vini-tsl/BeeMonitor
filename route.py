@@ -2,7 +2,7 @@ from flask import render_template, request, redirect, url_for, flash, session, j
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
 import re
-from main import app
+from app import app
 from models import db, Usuario, EstadoColmeia, Evidencia, SaudeAbelha, CapturaAbelha, ProducaoMel
 
 # ================= FUNÇÕES AUXILIARES =================
