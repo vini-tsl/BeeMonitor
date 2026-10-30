@@ -1,5 +1,6 @@
 from flask import render_template, request, redirect, url_for, flash, session, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
+from sqlalchemy import func
 from datetime import datetime, timedelta
 import re
 from app import app
@@ -43,18 +44,18 @@ def index():
 
 @app.route('/cadastro', methods=['POST'])
 def cadastro():
-    nome = request.form['nome']
-    email = request.form['email']
-    telefone = request.form['telefone']
-    cpf = request.form['cpf']
-    tipo_usuario = request.form['tipoUsuario']
-    senha = request.form['senhaCadastro']
-    confirma_senha = request.form['confirmaCadastro']
+    nome = (request.form.get('nome') or '').strip()
+    email = (request.form.get('email') or '').strip().lower()
+    telefone = (request.form.get('telefone') or '').strip()
+    cpf = (request.form.get('cpf') or '').strip()
+    tipo_usuario = (request.form.get('tipoUsuario') or '').strip()
+    senha = (request.form.get('senhaCadastro') or '').strip()
+    confirma_senha = (request.form.get('confirmaCadastro') or '').strip()
     
     # Validações
     erros = []
     
-    if not nome or len(nome.strip()) < 2:
+    if not nome or len(nome) < 2:
         erros.append('Nome deve ter pelo menos 2 caracteres')
     
     if not validar_email_institucional(email):
@@ -73,14 +74,14 @@ def cadastro():
         erros.append('Senhas não coincidem')
     
     # Verificar se email ou CPF já existem
-    if Usuario.query.filter_by(email=email).first():
+    if Usuario.query.filter(func.lower(Usuario.email) == email).first():
         erros.append('Email já cadastrado')
     
-    if Usuario.query.filter_by(cpf=cpf).first():
+    if Usuario.query.filter_by(cpf=re.sub(r'\D', '', cpf)).first():
         erros.append('CPF já cadastrado')
     
     if tipo_usuario == 'Participante':
-        matricula = request.form.get('matricula', '')
+        matricula = (request.form.get('matricula') or '').strip()
         if not matricula or len(re.sub(r'\D', '', matricula)) != 12:
             erros.append('Matrícula deve ter 12 dígitos')
     else:
@@ -93,8 +94,8 @@ def cadastro():
     
     # Criar usuário
     novo_usuario = Usuario(
-        nome=nome.strip(),
-        email=email.lower(),
+        nome=nome,
+        email=email,
         telefone=re.sub(r'\D', '', telefone),
         cpf=re.sub(r'\D', '', cpf),
         tipo_usuario=tipo_usuario,
@@ -112,22 +113,30 @@ def cadastro():
         flash(f'Erro ao cadastrar usuário: {str(e)}', 'error')
         return render_template('index.html')
 
-@app.route('/login', methods=['POST'])
+@app.route('/login', methods=['GET', 'POST'])
 def login():
-    email = request.form['emailLogin']
-    senha = request.form['senhaLogin']
-    
-    usuario = Usuario.query.filter_by(email=email.lower(), ativo=True).first()
-    
+    if request.method == 'GET':
+        return redirect(url_for('index'))
+
+    email = (request.form.get('emailLogin') or '').strip().lower()
+    senha = (request.form.get('senhaLogin') or '').strip()
+
+    if not email or not senha:
+        flash('Preencha o e-mail e a senha para continuar.', 'error')
+        return redirect(url_for('index'))
+
+    usuario = Usuario.query.filter(func.lower(Usuario.email) == email, Usuario.ativo.is_(True)).first()
+
     if usuario and check_password_hash(usuario.senha, senha):
+        session.clear()
         session['usuario_id'] = usuario.id
         session['usuario_nome'] = usuario.nome
         session['usuario_tipo'] = usuario.tipo_usuario
         flash(f'Bem-vindo(a), {usuario.nome}!', 'success')
         return redirect(url_for('monitoramento'))
-    else:
-        flash('Email ou senha incorretos!', 'error')
-        return redirect(url_for('index'))
+
+    flash('Email ou senha incorretos!', 'error')
+    return redirect(url_for('index'))
 
 @app.route('/logout')
 def logout():

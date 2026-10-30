@@ -798,18 +798,63 @@
         
         // Validação de formulários
         document.getElementById('formCadastro')?.addEventListener('submit', function(e) {
+            const nome = document.getElementById('nome').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const telefone = document.getElementById('telefone').value.trim();
+            const cpf = document.getElementById('cpf').value.trim();
+            const tipoUsuario = document.getElementById('tipoUsuario').value;
+            const matricula = document.getElementById('matricula')?.value.trim() || '';
             const senha = document.getElementById('senhaCadastro').value;
             const confirmaSenha = document.getElementById('confirmaCadastro').value;
-            
+
+            const cpfNumeros = cpf.replace(/\D/g, '');
+            const telefoneNumeros = telefone.replace(/\D/g, '');
+
+            if (!nome || nome.length < 2) {
+                e.preventDefault();
+                mostrarFlashMessage("Informe um nome válido com pelo menos 2 caracteres.", "error");
+                return false;
+            }
+
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                e.preventDefault();
+                mostrarFlashMessage("Informe um e-mail válido.", "error");
+                return false;
+            }
+
+            if (telefoneNumeros.length !== 11) {
+                e.preventDefault();
+                mostrarFlashMessage("O telefone deve conter 11 dígitos.", "error");
+                return false;
+            }
+
+            if (cpfNumeros.length !== 11 || !/^\d{11}$/.test(cpfNumeros)) {
+                e.preventDefault();
+                mostrarFlashMessage("O CPF deve conter 11 dígitos.", "error");
+                return false;
+            }
+
+            if (!tipoUsuario) {
+                e.preventDefault();
+                mostrarFlashMessage("Selecione o tipo de usuário.", "error");
+                return false;
+            }
+
+            if (tipoUsuario === 'Participante' && matricula.replace(/\D/g, '').length !== 12) {
+                e.preventDefault();
+                mostrarFlashMessage("A matrícula deve conter 12 dígitos para participantes.", "error");
+                return false;
+            }
+
             if (senha !== confirmaSenha) {
                 e.preventDefault();
                 mostrarFlashMessage("As senhas não coincidem!", "error");
                 return false;
             }
-            
-            if (senha.length < 6) {
+
+            if (senha.length < 6 || !/[A-Za-z]/.test(senha) || !/\d/.test(senha)) {
                 e.preventDefault();
-                mostrarFlashMessage("A senha deve ter pelo menos 6 caracteres!", "error");
+                mostrarFlashMessage("A senha deve ter no mínimo 6 caracteres, com letras e números.", "error");
                 return false;
             }
         });
