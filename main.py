@@ -9,7 +9,7 @@ app.secret_key = os.environ.get(
     "chave-temporaria-para-testes"
 )
 
-# Configuração do SQLite
+# Configuração do banco de dados
 if os.environ.get("VERCEL"):
     database_path = "/tmp/beemonitor.db"
 else:
@@ -23,10 +23,7 @@ else:
         "beemonitor.db"
     )
 
-app.config["SQLALCHEMY_DATABASE_URI"] = (
-    f"sqlite:///{database_path}"
-)
-
+app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{database_path}"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db.init_app(app)
