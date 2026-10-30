@@ -1,37 +1,42 @@
-from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
 import os
+from flask import Flask
+from models import db
 
-basedir = os.path.abspath(os.path.dirname(__file__))
+app = Flask(__name__)
 
+app.secret_key = os.environ.get(
+    "SECRET_KEY",
+    "chave-temporaria-para-testes"
+)
+
+# Configuração do SQLite
 if os.environ.get("VERCEL"):
     database_path = "/tmp/beemonitor.db"
 else:
+    basedir = os.path.abspath(os.path.dirname(__file__))
+    instance_path = os.path.join(basedir, "instance")
+
+    os.makedirs(instance_path, exist_ok=True)
+
     database_path = os.path.join(
-        basedir, "instance", "beemonitor.db"
+        instance_path,
+        "beemonitor.db"
     )
-    os.makedirs(os.path.dirname(database_path), exist_ok=True)
 
 app.config["SQLALCHEMY_DATABASE_URI"] = (
     f"sqlite:///{database_path}"
 )
+
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-# ================= CONFIGURAÇÃO DO APP =================
-app = Flask(__name__)
-app.secret_key = '3j219i3n1bnu1wdh1u2dnh821kj'
-
-
-from models import db
 db.init_app(app)
 
-# Importar rotas DEPOIS de inicializar o app e db
+# Importar rotas
 from route import *
 
+# Criar tabelas durante a inicialização
+with app.app_context():
+    db.create_all()
+
 if __name__ == "__main__":
-    with app.app_context():
-        # Criar diretório instance se não existir
-        if not os.path.exists('instance'):
-            os.makedirs('instance')
-        db.create_all()
     app.run(debug=True)
